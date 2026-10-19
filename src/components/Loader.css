@@ -1,0 +1,142 @@
+.katharine-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  animation: loaderFadeOut 0.5s ease forwards;
+  animation-delay: 1.25s;
+}
+
+.katharine-loader-inline {
+  position: relative;
+  inset: auto;
+  z-index: 1;
+  width: 100%;
+  min-height: 300px;
+  background: transparent;
+  animation: none;
+}
+
+.katharine-loader-inline .loader-content {
+  width: min(360px, 85vw);
+}
+
+.katharine-loader-inline .loader-ring {
+  width: 190px;
+  height: 190px;
+}
+
+.katharine-loader-inline .logo-wrapper {
+  width: 280px;
+}
+
+.loader-label {
+  position: relative;
+  z-index: 2;
+  margin-top: 12px;
+  color: #113173;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.loader-content {
+  position: relative;
+  width: min(520px, 85vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader-ring {
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  border: 2px solid rgba(253, 201, 39, 0.15);
+  border-top-color: #fdc927;
+  border-right-color: #0293fd;
+  animation: rotateRing 1.2s linear infinite;
+}
+
+.logo-wrapper {
+  position: relative;
+  z-index: 2;
+  width: 420px;
+  max-width: 80vw;
+  overflow: hidden;
+  padding: 15px;
+}
+
+.katharine-logo {
+  display: block;
+  width: 100%;
+  height: auto;
+  animation: logoReveal 1.1s cubic-bezier(0.65, 0, 0.35, 1) forwards,
+    logoPulse 1.4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.loading-dots {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  gap: 7px;
+  margin-top: 22px;
+}
+
+.loading-dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fdc927;
+  animation: dotAnimation 1s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(2) {
+  background: #0293fd;
+  animation-delay: 0.15s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes logoReveal {
+  0% { opacity: 0; clip-path: inset(0 100% 0 0); transform: scale(0.88); }
+  60% { opacity: 1; clip-path: inset(0 0 0 0); transform: scale(1.03); }
+  100% { opacity: 1; clip-path: inset(0 0 0 0); transform: scale(1); }
+}
+
+@keyframes logoPulse {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(253, 201, 39, 0)); }
+  50% { filter: drop-shadow(0 5px 18px rgba(253, 201, 39, 0.28)); }
+}
+
+@keyframes rotateRing {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes dotAnimation {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-6px); opacity: 1; }
+}
+
+@keyframes loaderFadeOut {
+  0% { opacity: 1; visibility: visible; }
+  100% { opacity: 0; visibility: hidden; pointer-events: none; }
+}
+
+@media (max-width: 600px) {
+  .loader-ring { width: 190px; height: 190px; }
+  .logo-wrapper { width: 320px; }
+  .loading-dots { margin-top: 15px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .katharine-logo, .loader-ring, .loading-dots span, .katharine-loader { animation: none; }
+}
