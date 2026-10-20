@@ -18,6 +18,7 @@ const SECTIONS = [
     { id: "orders", label: "Orders", endpoint: "/admin/orders" },
     { id: "reviews", label: "Reviews", endpoint: "/admin/reviews" },
     { id: "settings", label: "Site settings", endpoint: "/admin/settings" },
+    { id: "hero-banners", label: "Home hero banners", endpoint: "/admin/hero-banners" },
     { id: "customers", label: "Customers", endpoint: "/admin/customers" },
     { id: "enquiries", label: "Enquiries", endpoint: "/admin/enquiries" },
     { id: "coupons", label: "Coupons", endpoint: "/admin/coupons" },
@@ -55,6 +56,7 @@ const emptyProductPage = {
 };
 const emptyCoupon = { code: "", type: "percent", value: "", minimum_order: "", maximum_discount: "", usage_limit: "", starts_at: "", expires_at: "", is_active: true };
 const emptyBlog = { title: "", slug: "", excerpt: "", body: "", cover_image: "", status: "draft", published_at: "" };
+const emptyHeroBanner = { image: "", destination_url: "", alt_text: "", sort_order: 0, is_active: true };
 const defaultSiteSettings = { site_title: "Katharine Pharmaceuticals Private Limited, Jaipur", site_description: "Trader - Wholesaler / Distributor of Animal Feed Supplement, Mineral Mixture & Liquid Calcium offered by Katharine Pharmaceuticals Private Limited from Jaipur, Rajasthan, India", site_keywords: "", site_logo: "" };
 
 function slugify(value) {
@@ -235,7 +237,8 @@ export default function AdminDashboard() {
                 : section === "animals" ? { ...emptyAnimalCategory }
                 : section === "product-pages" || section === "veterinary-pages" ? { ...emptyProductPage }
                 : section === "coupons" ? { ...emptyCoupon }
-                    : { ...emptyBlog });
+                    : section === "hero-banners" ? { ...emptyHeroBanner }
+                        : { ...emptyBlog });
     }
 
     function startEdit(record) {
@@ -284,6 +287,7 @@ export default function AdminDashboard() {
             starts_at: record.starts_at ? record.starts_at.slice(0, 16) : "",
             expires_at: record.expires_at ? record.expires_at.slice(0, 16) : "",
         });
+        else if (section === "hero-banners") setFormValues({ ...emptyHeroBanner, ...record });
         else setFormValues({ ...emptyBlog, ...record, published_at: record.published_at ? record.published_at.slice(0, 16) : "" });
     }
 
@@ -303,6 +307,14 @@ export default function AdminDashboard() {
             let method = isNew ? "POST" : "PUT";
             let galleryImages = [];
             let galleryAlt = "";
+
+            if (section === "hero-banners") {
+                body = new FormData(event.currentTarget);
+                body.set("is_active", formValues.is_active ? "1" : "0");
+                const image = body.get("image");
+                if (!(image instanceof File) || !image.size) body.delete("image");
+                if (!isNew) { body.set("_method", "PUT"); method = "POST"; }
+            }
 
             if (section === "products") {
                 const submitted = new FormData(event.currentTarget);
@@ -533,7 +545,7 @@ export default function AdminDashboard() {
         router.replace("/admin/login");
     }
 
-    const editable = ["products", "product-pages", "veterinary-pages", "categories", "animals", "coupons", "blog"].includes(section);
+    const editable = ["products", "product-pages", "veterinary-pages", "categories", "animals", "coupons", "blog", "hero-banners"].includes(section);
     const title = activeSection?.label || "Admin";
 
     return (
@@ -568,7 +580,7 @@ export default function AdminDashboard() {
                             <h2 className="text-2xl font-bold">{title}</h2>
                             <p className="mt-1 text-sm text-slate-600">Manage store {title.toLowerCase()}.</p>
                         </div>
-                        {editable && <button onClick={startCreate} className="rounded-xl bg-[#113173] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">+ Add {section === "blog" ? "post" : section === "animals" ? "animal type" : section === "product-pages" ? "listing page" : section === "veterinary-pages" ? "veterinary page" : section.slice(0, -1)}</button>}
+                        {editable && <button onClick={startCreate} className="rounded-xl bg-[#113173] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900">+ Add {section === "blog" ? "post" : section === "animals" ? "animal type" : section === "product-pages" ? "listing page" : section === "veterinary-pages" ? "veterinary page" : section === "hero-banners" ? "banner" : section.slice(0, -1)}</button>}
                     </div>
 
                     {notice && <p className={`mb-5 rounded-xl px-4 py-3 text-sm ${notice.type === "error" ? "bg-red-50 text-red-800" : "bg-emerald-50 text-emerald-800"}`} role="status">{notice.text}</p>}
@@ -586,6 +598,7 @@ export default function AdminDashboard() {
             {section === "veterinary-pages" && <ProductPageForm key={`${section}-${editing}`} values={formValues} setField={setField} veterinaryPage />}
                             {section === "coupons" && <CouponForm values={formValues} setField={setField} />}
                             {section === "blog" && <BlogForm values={formValues} setField={setField} />}
+            {section === "hero-banners" && <HeroBannerForm values={formValues} setField={setField} />}
                             <button disabled={saving} className="mt-5 rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60">{saving ? "Saving…" : "Save changes"}</button>
                         </form>
                     )}
@@ -880,9 +893,19 @@ function BlogForm({ values, setField }) {
     );
 }
 
+function HeroBannerForm({ values, setField }) {
+    return <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2"><ImageUploadField label="Banner image" name="image" currentImage={values.image_url || values.image} helper="Landscape banner recommended. JPG, PNG or WebP, up to 5 MB. Leave empty to keep the current image." /></div>
+        <Field label="Click destination URL (optional)" name="destination_url" value={values.destination_url} placeholder="https://medexa.in/shop or /shop" onChange={(event) => setField("destination_url", event.target.value)} />
+        <Field label="Image description (alt text)" name="alt_text" value={values.alt_text} onChange={(event) => setField("alt_text", event.target.value)} />
+        <Field label="Display order (smaller number appears first)" name="sort_order" type="number" min="0" value={values.sort_order} onChange={(event) => setField("sort_order", event.target.value)} />
+        <label className="flex items-center gap-2 pt-7 text-sm font-medium text-slate-700"><input name="is_active" type="checkbox" checked={Boolean(values.is_active)} onChange={(event) => setField("is_active", event.target.checked)} /> Show this banner on homepage</label>
+    </div>;
+}
+
 function SectionTable({ section, records, categories, onEdit, onDelete, onStatusSave, pendingStatuses, setPendingStatuses }) {
     const empty = <tr><td colSpan={6} className="px-5 py-12 text-center text-slate-500">No {section} found. Add the first record to get started.</td></tr>;
-    const actions = (record) => <div className="flex justify-end gap-2">{["products", "product-pages", "veterinary-pages", "categories", "animals", "coupons", "blog"].includes(section) && <button onClick={() => onEdit(record)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50">Edit</button>}{["products", "product-pages", "veterinary-pages", "categories", "animals", "coupons", "blog"].includes(section) && <button onClick={() => onDelete(record)} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50">Delete</button>}</div>;
+    const actions = (record) => <div className="flex justify-end gap-2">{["products", "product-pages", "veterinary-pages", "categories", "animals", "coupons", "blog", "hero-banners"].includes(section) && <button onClick={() => onEdit(record)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50">Edit</button>}{["products", "product-pages", "veterinary-pages", "categories", "animals", "coupons", "blog", "hero-banners"].includes(section) && <button onClick={() => onDelete(record)} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50">Delete</button>}</div>;
 
     if (section === "products") return <DataTable><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Product</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Price</th><th className="px-4 py-3">Stock</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{records.length ? records.map((item) => <tr key={item.id}><td className="px-4 py-3"><p className="font-semibold">{item.name}</p><p className="text-xs text-slate-500">{item.slug}</p></td><td className="px-4 py-3">{item.category?.name || categories.find((category) => category.id === item.category_id)?.name || "—"}</td><td className="px-4 py-3">{money(item.sale_price || item.price)}</td><td className="px-4 py-3">{item.stock}</td><td className="px-4 py-3"><Badge>{item.status ? "Published" : "Hidden"}</Badge></td><td className="px-4 py-3">{actions(item)}</td></tr>) : empty}</tbody></DataTable>;
 
@@ -895,6 +918,8 @@ function SectionTable({ section, records, categories, onEdit, onDelete, onStatus
     if (section === "product-pages") return <DataTable><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Page</th><th className="px-4 py-3">Product form</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{records.length ? records.map((item) => <tr key={item.id}><td className="px-4 py-3"><p className="font-semibold">{item.title}</p><p className="text-xs text-slate-500">/{item.slug}</p></td><td className="px-4 py-3"><Badge>{item.product_form}</Badge></td><td className="px-4 py-3"><Badge>{item.status ? "Published" : "Hidden"}</Badge></td><td className="px-4 py-3">{actions(item)}</td></tr>) : empty}</tbody></DataTable>;
 
     if (section === "veterinary-pages") return <DataTable><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Veterinary page</th><th className="px-4 py-3">URL</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{records.length ? records.map((item) => <tr key={item.id}><td className="px-4 py-3 font-semibold">{item.title}</td><td className="px-4 py-3">/{item.slug}</td><td className="px-4 py-3"><Badge>{item.status ? "Published" : "Hidden"}</Badge></td><td className="px-4 py-3">{actions(item)}</td></tr>) : empty}</tbody></DataTable>;
+
+    if (section === "hero-banners") return <DataTable><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Banner</th><th className="px-4 py-3">Click destination</th><th className="px-4 py-3">Order</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{records.length ? records.map((item) => <tr key={item.id}><td className="px-4 py-3"><div className="flex items-center gap-3"><img src={adminImageUrl(item.image_url || item.image)} alt={item.alt_text || "Banner"} className="h-14 w-24 rounded object-cover" /><span className="max-w-xs truncate">{item.alt_text || "Homepage banner"}</span></div></td><td className="max-w-xs truncate px-4 py-3">{item.destination_url || "No link"}</td><td className="px-4 py-3">{item.sort_order}</td><td className="px-4 py-3"><Badge>{item.is_active ? "Active" : "Hidden"}</Badge></td><td className="px-4 py-3">{actions(item)}</td></tr>) : empty}</tbody></DataTable>;
 
     if (section === "orders") return <DataTable><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Order</th><th className="px-4 py-3">Date</th><th className="px-4 py-3">Total</th><th className="px-4 py-3">Payment</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Update</th></tr></thead><tbody className="divide-y divide-slate-100">{records.length ? records.map((item) => <tr key={item.id}><td className="px-4 py-3 font-semibold">{item.order_number}</td><td className="px-4 py-3">{date(item.created_at)}</td><td className="px-4 py-3">{money(item.grand_total)}</td><td className="px-4 py-3"><Badge>{item.payment_status}</Badge></td><td className="px-4 py-3"><select value={pendingStatuses[item.id] ?? item.status} onChange={(event) => setPendingStatuses((state) => ({ ...state, [item.id]: event.target.value }))} className="rounded-lg border border-slate-300 px-2 py-1.5">{ORDER_STATUSES.map((status) => <option key={status} value={status}>{status.replaceAll("_", " ")}</option>)}</select></td><td className="px-4 py-3"><button onClick={() => onStatusSave(item, pendingStatuses[item.id] ?? item.status)} className="rounded-lg bg-[#113173] px-3 py-1.5 text-xs font-semibold text-white">Save</button></td></tr>) : empty}</tbody></DataTable>;
 
